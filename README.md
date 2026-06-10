@@ -11,6 +11,8 @@ This plugin aims to make imports easier to scan by grouping them by source type 
 ## Example
 
 ```ts
+import path from "node:path";
+
 import React from "react";
 import { clsx } from "clsx";
 
@@ -21,9 +23,39 @@ import styles from "./style.module.css";
 import { helper } from "../lib/helper";
 ```
 
+## Usage
+
+```js
+import layeredImports from "@electrohyun/eslint-plugin-layered-imports";
+
+export default [
+  {
+    plugins: {
+      "layered-imports": layeredImports,
+    },
+    rules: {
+      "layered-imports/import-spacing": "error",
+    },
+  },
+];
+```
+
+## Rules
+
+### `import-spacing`
+
+Requires a blank line between different import groups.
+
+The initial groups are:
+
+- `builtin`: Node.js built-in modules such as `node:path` or `fs`
+- `external`: npm package imports such as `react` or `clsx`
+- `internal`: project-local alias imports such as `@/shared/ui`
+- `relative`: relative imports such as `./helper` or `../lib/helper`
+
 ## Roadmap
 
-- [ ] Add `import-spacing` rule
+- [x] Add `import-spacing` rule
 - [ ] Support configurable layer order
 - [ ] Add auto-fix support
 - [ ] Add FSD-friendly preset
