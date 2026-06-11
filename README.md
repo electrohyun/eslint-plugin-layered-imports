@@ -134,7 +134,32 @@ export default [
 ];
 ```
 
-Imports are reported when a later group appears before an earlier configured group. This option does not move imports automatically.
+Imports are reported when a later group appears before an earlier configured group.
+
+#### Autofix behavior
+
+The rule can autofix safe import group order violations. When imports are in the same contiguous import block, `--fix` reorders them by the configured `groups` order and normalizes blank lines between groups.
+
+```ts
+import helper from "./helper";
+import React from "react";
+```
+
+is fixed to:
+
+```ts
+import React from "react";
+
+import helper from "./helper";
+```
+
+Autofix is intentionally conservative:
+
+- It does not move imports across non-import statements.
+- It does not reorder an import block that contains side-effect imports such as `import "./setup";`.
+- Leading comments attached to an import move together with that import.
+- Imports inside the same group keep their existing relative order.
+- FSD layer-aware ordering inside the `internal` group is tracked separately.
 
 ## Roadmap
 
