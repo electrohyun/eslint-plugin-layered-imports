@@ -28,6 +28,7 @@ const rule: Rule.RuleModule = {
       description: "Require blank lines between different import groups",
       recommended: false,
     },
+    fixable: "whitespace",
     schema: [],
     messages: {
       missingBlankLine:
@@ -78,6 +79,12 @@ const rule: Rule.RuleModule = {
               context.report({
                 node: currentImport.node,
                 messageId: "missingBlankLine",
+                fix(fixer) {
+                  return fixer.insertTextBefore(
+                    currentImport.node,
+                    "\n"
+                  );
+                }
               });
             }
           }
