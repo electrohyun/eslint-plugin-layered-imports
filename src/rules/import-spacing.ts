@@ -4,6 +4,12 @@ import type { Rule } from "eslint";
 type ImportGroup = "builtin" | "external" | "internal" | "relative";
 
 const DEFAULT_INTERNAL_ALIASES = ["@/"];
+const DEFAULT_GROUPS: ImportGroup[] = [
+  "builtin",
+  "external",
+  "internal",
+  "relative",
+];
 
 function getImportGroup(
   source: string,
@@ -44,6 +50,16 @@ const rule: Rule.RuleModule = {
               type: "string",
             },
           },
+          groups: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: ["builtin", "external", "internal", "relative"],
+            },
+            minItems: 4,
+            maxItems: 4,
+            uniqueItems: true,
+          },
         },
         additionalProperties: false,
       },
@@ -51,6 +67,8 @@ const rule: Rule.RuleModule = {
     messages: {
       missingBlankLine:
         "Expected a blank line between different import groups.",
+      unexpectedGroupOrder:
+        "Expected import groups to follow the configured order.",
     },
   },
 
@@ -58,6 +76,7 @@ const rule: Rule.RuleModule = {
     const options = context.options[0];
     const internalAliases =
       options?.internalAliases ?? DEFAULT_INTERNAL_ALIASES;
+    const groups = options?.groups ?? DEFAULT_GROUPS;
 
     return {
       Program(node) {
@@ -81,9 +100,26 @@ const rule: Rule.RuleModule = {
           ];
         });
 
+        // Keep the furthest group we've seen so imports cannot move back to an earlier group.
+        let highestSeenGroupIndex = groups.indexOf(importEntries[0]?.group);
+
         for (let index = 1; index < importEntries.length; index += 1) {
           const previousImport = importEntries[index - 1];
           const currentImport = importEntries[index];
+
+          const currentGroupIndex = groups.indexOf(currentImport.group);
+
+          if (currentGroupIndex < highestSeenGroupIndex) {
+            context.report({
+              node: currentImport.node,
+              messageId: "unexpectedGroupOrder",
+            });
+          }
+
+          highestSeenGroupIndex = Math.max(
+            highestSeenGroupIndex,
+            currentGroupIndex,
+          );
 
           if (previousImport.group !== currentImport.group) {
             const previousLocation = previousImport.node.loc;
