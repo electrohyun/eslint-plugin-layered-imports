@@ -34,11 +34,11 @@ import { helper } from "../lib/helper";
 ## Installation
 
 ```bash
-pnpm add -D @electrohyun/eslint-plugin-layered-imports
+pnpm add -D eslint-plugin-layered-imports
 ```
 
 ```bash
-npm install -D @electrohyun/eslint-plugin-layered-imports
+npm install -D eslint-plugin-layered-imports
 ```
 
 ## Usage
@@ -114,7 +114,7 @@ export default [
 With options:
 
 ```js
-import layeredImports from "@electrohyun/eslint-plugin-layered-imports";
+import layeredImports from "eslint-plugin-layered-imports";
 
 export default [
   {
