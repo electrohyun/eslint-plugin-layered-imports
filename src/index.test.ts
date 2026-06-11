@@ -19,6 +19,14 @@ describe("plugin configs", () => {
         {
           internalAliases: ["@/"],
           groups: ["builtin", "external", "internal", "relative"],
+          internalLayerOrder: [
+            "app",
+            "pages",
+            "widgets",
+            "features",
+            "entities",
+            "shared",
+          ],
         },
       ],
     });

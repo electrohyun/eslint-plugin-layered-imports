@@ -95,6 +95,12 @@ const validSameInternalGroup = [
   'import { Button } from "@/shared/ui";',
 ].join("\n");
 
+const validUnorderedInternalImportsWithoutInternalLayerOrder = [
+  'import { Button } from "@/shared/ui/button";',
+  'import { LoginForm } from "@/features/auth";',
+  'import { UserCard } from "@/entities/user";',
+].join("\n");
+
 const validSameRelativeGroup = [
   'import helper from "./helper";',
   'import util from "../util";',
@@ -201,6 +207,42 @@ const validOrderKeepsSameGroupOrder = [
   'import helperA from "./a";',
 ].join("\n");
 
+const invalidInternalLayerOrder = [
+  'import { Button } from "@/shared/ui/button";',
+  'import { UserCard } from "@/entities/user";',
+  'import { LoginForm } from "@/features/auth";',
+].join("\n");
+
+const validInternalLayerOrder = [
+  'import { LoginForm } from "@/features/auth";',
+  'import { UserCard } from "@/entities/user";',
+  'import { Button } from "@/shared/ui/button";',
+].join("\n");
+
+const invalidSameInternalLayerSourceOrder = [
+  'import { Input } from "@/shared/ui/input";',
+  'import { Button } from "@/shared/ui/button";',
+].join("\n");
+
+const validSameInternalLayerSourceOrder = [
+  'import { Button } from "@/shared/ui/button";',
+  'import { Input } from "@/shared/ui/input";',
+].join("\n");
+
+const invalidInternalLayerOrderWithUnknownInternal = [
+  'import config from "@/lib/config";',
+  'import { api } from "@/shared/api";',
+  'import { LoginForm } from "@/features/auth";',
+  'import logger from "@/lib/logger";',
+].join("\n");
+
+const validInternalLayerOrderWithUnknownInternal = [
+  'import { LoginForm } from "@/features/auth";',
+  'import { api } from "@/shared/api";',
+  'import config from "@/lib/config";',
+  'import logger from "@/lib/logger";',
+].join("\n");
+
 ruleTester.run("import-spacing", rule, {
   valid: [
     {
@@ -220,6 +262,9 @@ ruleTester.run("import-spacing", rule, {
     },
     {
       code: validSameInternalGroup,
+    },
+    {
+      code: validUnorderedInternalImportsWithoutInternalLayerOrder,
     },
     {
       code: validSameRelativeGroup,
@@ -294,6 +339,50 @@ ruleTester.run("import-spacing", rule, {
       output: validOrderKeepsSameGroupOrder,
       errors: [{ messageId: "unexpectedGroupOrder" }],
     },
+    {
+      code: invalidInternalLayerOrder,
+      options: [
+        {
+          internalLayerOrder: [
+            "app",
+            "pages",
+            "widgets",
+            "features",
+            "entities",
+            "shared",
+          ],
+        },
+      ],
+      output: validInternalLayerOrder,
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
+    {
+      code: invalidSameInternalLayerSourceOrder,
+      options: [
+        {
+          internalLayerOrder: [
+            "app",
+            "pages",
+            "widgets",
+            "features",
+            "entities",
+            "shared",
+          ],
+        },
+      ],
+      output: validSameInternalLayerSourceOrder,
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
+    {
+      code: invalidInternalLayerOrderWithUnknownInternal,
+      options: [
+        {
+          internalLayerOrder: ["features", "entities", "shared"],
+        },
+      ],
+      output: validInternalLayerOrderWithUnknownInternal,
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
   ],
 });
 
@@ -336,6 +425,18 @@ describe("import-spacing options schema", () => {
         groups: ["builtin", "external", "internal", "internal"],
       }),
     ).toThrow(/duplicate items/);
+  });
+
+  it("rejects internalLayerOrder when it is not an array", () => {
+    expect(() => verifyWithOptions({ internalLayerOrder: "features" })).toThrow(
+      /should be array/,
+    );
+  });
+
+  it("rejects internalLayerOrder when an item is not a string", () => {
+    expect(() =>
+      verifyWithOptions({ internalLayerOrder: ["features", 123] }),
+    ).toThrow(/should be string/);
   });
 
   it("rejects unknown options", () => {

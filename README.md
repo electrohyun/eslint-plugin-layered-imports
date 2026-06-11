@@ -29,6 +29,8 @@ import { helper } from "../lib/helper";
 
 Use the FSD-friendly preset to enable the plugin with sensible defaults for layered frontend projects.
 
+The preset treats `@/` imports as internal imports, orders top-level groups as `builtin`, `external`, `internal`, `relative`, and orders internal imports by the common FSD layer order: `app`, `pages`, `widgets`, `features`, `entities`, `shared`.
+
 ```js
 import layeredImports from "@electrohyun/eslint-plugin-layered-imports";
 
@@ -136,6 +138,39 @@ export default [
 
 Imports are reported when a later group appears before an earlier configured group.
 
+##### `internalLayerOrder`
+
+Type: `string[]`
+
+Default: `undefined`
+
+Configures an optional order inside the `internal` group. The rule removes the matching `internalAliases` prefix, reads the first path segment as the internal layer, and orders known layers by this array.
+
+```js
+export default [
+  {
+    plugins: {
+      "layered-imports": layeredImports,
+    },
+    rules: {
+      "layered-imports/import-spacing": ["error", {
+        internalAliases: ["@/"],
+        internalLayerOrder: [
+          "app",
+          "pages",
+          "widgets",
+          "features",
+          "entities",
+          "shared",
+        ],
+      }],
+    },
+  },
+];
+```
+
+For example, `@/shared/ui/button` is treated as the `shared` layer. Known layers are ordered before unknown internal paths. Unknown internal paths keep their existing relative order. Imports in the same known layer are sorted by source path.
+
 #### Autofix behavior
 
 The rule can autofix safe import group order violations. When imports are in the same contiguous import block, `--fix` reorders them by the configured `groups` order and normalizes blank lines between groups.
@@ -158,8 +193,7 @@ Autofix is intentionally conservative:
 - It does not move imports across non-import statements.
 - It does not reorder an import block that contains side-effect imports such as `import "./setup";`.
 - Leading comments attached to an import move together with that import.
-- Imports inside the same group keep their existing relative order.
-- FSD layer-aware ordering inside the `internal` group is tracked separately.
+- Imports inside the same group keep their existing relative order unless `internalLayerOrder` is configured for internal imports.
 
 ## Roadmap
 
@@ -167,3 +201,4 @@ Autofix is intentionally conservative:
 - [x] Support configurable import group order
 - [x] Add auto-fix support
 - [x] Add FSD-friendly preset
+- [x] Support optional internal layer ordering

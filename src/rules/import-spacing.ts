@@ -32,6 +32,21 @@ function getImportGroup(
   return "external";
 }
 
+function getInternalLayer(
+  source: string,
+  internalAliases: string[],
+): string | undefined {
+  const alias = internalAliases.find((internalAlias) =>
+    source.startsWith(internalAlias),
+  );
+
+  if (!alias) {
+    return undefined;
+  }
+
+  return source.slice(alias.length).split("/")[0];
+}
+
 const rule: Rule.RuleModule = {
   meta: {
     type: "layout",
@@ -60,6 +75,13 @@ const rule: Rule.RuleModule = {
             maxItems: 4,
             uniqueItems: true,
           },
+          internalLayerOrder: {
+            type: "array",
+            items: {
+              type: "string",
+            },
+            uniqueItems: true,
+          },
         },
         additionalProperties: false,
       },
@@ -78,6 +100,7 @@ const rule: Rule.RuleModule = {
     const internalAliases =
       options?.internalAliases ?? DEFAULT_INTERNAL_ALIASES;
     const groups = options?.groups ?? DEFAULT_GROUPS;
+    const internalLayerOrder = options?.internalLayerOrder;
 
     return {
       Program(node) {
@@ -154,6 +177,57 @@ const rule: Rule.RuleModule = {
           }, "");
         }
 
+        function compareImportEntries(
+          firstEntry: ImportEntry,
+          secondEntry: ImportEntry,
+        ): number {
+          const firstGroupIndex = groups.indexOf(firstEntry.group);
+          const secondGroupIndex = groups.indexOf(secondEntry.group);
+
+          if (firstGroupIndex !== secondGroupIndex) {
+            return firstGroupIndex - secondGroupIndex;
+          }
+
+          if (
+            firstEntry.group !== "internal" ||
+            secondEntry.group !== "internal" ||
+            !internalLayerOrder
+          ) {
+            return 0;
+          }
+
+          const firstLayer = getInternalLayer(
+            firstEntry.source,
+            internalAliases,
+          );
+          const secondLayer = getInternalLayer(
+            secondEntry.source,
+            internalAliases,
+          );
+          const firstLayerIndex = firstLayer
+            ? internalLayerOrder.indexOf(firstLayer)
+            : -1;
+          const secondLayerIndex = secondLayer
+            ? internalLayerOrder.indexOf(secondLayer)
+            : -1;
+          const isFirstKnownLayer = firstLayerIndex !== -1;
+          const isSecondKnownLayer = secondLayerIndex !== -1;
+
+          if (isFirstKnownLayer && isSecondKnownLayer) {
+            if (firstLayerIndex !== secondLayerIndex) {
+              return firstLayerIndex - secondLayerIndex;
+            }
+
+            return firstEntry.source.localeCompare(secondEntry.source);
+          }
+
+          if (isFirstKnownLayer !== isSecondKnownLayer) {
+            return isFirstKnownLayer ? -1 : 1;
+          }
+
+          return 0;
+        }
+
         const entryByNode = new Map(
           importEntries.map((entry) => [entry.node, entry]),
         );
@@ -184,14 +258,18 @@ const rule: Rule.RuleModule = {
 
         // Keep the furthest group we've seen so imports cannot move back to an earlier group.
         let highestSeenGroupIndex = groups.indexOf(importEntries[0]?.group);
+        const reportedOrderBlocks = new Set<typeof importEntries>();
 
         for (let index = 1; index < importEntries.length; index += 1) {
           const previousImport = importEntries[index - 1];
           const currentImport = importEntries[index];
 
           const currentGroupIndex = groups.indexOf(currentImport.group);
+          const hasUnexpectedOrder =
+            currentGroupIndex < highestSeenGroupIndex ||
+            compareImportEntries(previousImport, currentImport) > 0;
 
-          if (currentGroupIndex < highestSeenGroupIndex) {
+          if (hasUnexpectedOrder) {
             const currentImportBlock = importBlocks.find((block) =>
               block.includes(currentImport),
             );
@@ -201,36 +279,45 @@ const rule: Rule.RuleModule = {
 
             if (
               !currentImportBlock ||
-              currentImportBlock !== previousImportBlock ||
-              currentImportBlock.some(
-                (entry) => entry.node.specifiers.length === 0,
-              )
+              !reportedOrderBlocks.has(currentImportBlock)
             ) {
-              context.report({
-                node: currentImport.node,
-                messageId: "unexpectedGroupOrder",
-              });
-            } else {
-              context.report({
-                node: currentImport.node,
-                messageId: "unexpectedGroupOrder",
-                fix(fixer) {
-                  const sortedImports = [...currentImportBlock].sort(
-                    (a, b) => groups.indexOf(a.group) - groups.indexOf(b.group),
-                  );
+              if (currentImportBlock) {
+                reportedOrderBlocks.add(currentImportBlock);
+              }
 
-                  const fixedText = buildImportBlockText(sortedImports);
+              if (
+                !currentImportBlock ||
+                currentImportBlock !== previousImportBlock ||
+                currentImportBlock.some(
+                  (entry) => entry.node.specifiers.length === 0,
+                )
+              ) {
+                context.report({
+                  node: currentImport.node,
+                  messageId: "unexpectedGroupOrder",
+                });
+              } else {
+                context.report({
+                  node: currentImport.node,
+                  messageId: "unexpectedGroupOrder",
+                  fix(fixer) {
+                    const sortedImports = [...currentImportBlock].sort(
+                      compareImportEntries,
+                    );
 
-                  return fixer.replaceTextRange(
-                    [
-                      getImportTextStart(currentImportBlock[0]),
-                      currentImportBlock[currentImportBlock.length - 1].node
-                        .range![1],
-                    ],
-                    fixedText,
-                  );
-                },
-              });
+                    const fixedText = buildImportBlockText(sortedImports);
+
+                    return fixer.replaceTextRange(
+                      [
+                        getImportTextStart(currentImportBlock[0]),
+                        currentImportBlock[currentImportBlock.length - 1].node
+                          .range![1],
+                      ],
+                      fixedText,
+                    );
+                  },
+                });
+              }
             }
           }
 
