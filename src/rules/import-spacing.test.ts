@@ -111,6 +111,24 @@ const validCustomAliasExternalToInternal = [
   'import { Button } from "~/shared/ui";',
 ].join("\n");
 
+const invalidRelativeToExternalOrder = [
+  'import helper from "./helper";',
+  "",
+  'import React from "react";',
+].join("\n");
+
+const validCustomRelativeToExternalOrder = [
+  'import helper from "./helper";',
+  "",
+  'import React from "react";',
+].join("\n");
+
+const invalidCustomExternalToInternalOrder = [
+  'import React from "react";',
+  "",
+  'import { Button } from "@/shared/ui";',
+].join("\n");
+
 ruleTester.run("import-spacing", rule, {
   valid: [
     {
@@ -133,6 +151,14 @@ ruleTester.run("import-spacing", rule, {
     },
     {
       code: validSameRelativeGroup,
+    },
+    {
+      code: validCustomRelativeToExternalOrder,
+      options: [
+        {
+          groups: ["relative", "external", "internal", "builtin"],
+        },
+      ],
     },
   ],
 
@@ -158,6 +184,19 @@ ruleTester.run("import-spacing", rule, {
       output: validCustomAliasExternalToInternal,
       errors: [{ messageId: "missingBlankLine" }],
     },
+    {
+      code: invalidRelativeToExternalOrder,
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
+    {
+      code: invalidCustomExternalToInternalOrder,
+      options: [
+        {
+          groups: ["internal", "external", "builtin", "relative"],
+        },
+      ],
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
   ],
 });
 
@@ -172,6 +211,34 @@ describe("import-spacing options schema", () => {
     expect(() => verifyWithOptions({ internalAliases: [123] })).toThrow(
       /should be string/,
     );
+  });
+
+  it("rejects groups when it is not an array", () => {
+    expect(() => verifyWithOptions({ groups: "builtin" })).toThrow(
+      /should be array/,
+    );
+  });
+
+  it("rejects groups when an item is not a known import group", () => {
+    expect(() =>
+      verifyWithOptions({
+        groups: ["builtin", "external", "internal", "unknown"],
+      }),
+    ).toThrow(/allowed values/);
+  });
+
+  it("rejects groups when a group is missing", () => {
+    expect(() =>
+      verifyWithOptions({ groups: ["builtin", "external", "internal"] }),
+    ).toThrow(/fewer than 4 items/);
+  });
+
+  it("rejects groups when a group is duplicated", () => {
+    expect(() =>
+      verifyWithOptions({
+        groups: ["builtin", "external", "internal", "internal"],
+      }),
+    ).toThrow(/duplicate items/);
   });
 
   it("rejects unknown options", () => {

@@ -80,9 +80,34 @@ export default [
 
 Configured aliases are matched as prefixes. Use specific prefixes such as `@/` or `@app/` instead of a broad `@` prefix so scoped packages such as `@tanstack/react-query` remain external.
 
+##### `groups`
+
+Type: `Array<"builtin" | "external" | "internal" | "relative">`
+
+Default: `["builtin", "external", "internal", "relative"]`
+
+Configures the expected order of import groups. The array must include each group exactly once.
+
+```js
+export default [
+  {
+    plugins: {
+      "layered-imports": layeredImports,
+    },
+    rules: {
+      "layered-imports/import-spacing": ["error", {
+        groups: ["builtin", "external", "internal", "relative"],
+      }],
+    },
+  },
+];
+```
+
+Imports are reported when a later group appears before an earlier configured group. This option does not move imports automatically.
+
 ## Roadmap
 
 - [x] Add `import-spacing` rule
-- [ ] Support configurable layer order
+- [x] Support configurable import group order
 - [x] Add auto-fix support
 - [ ] Add FSD-friendly preset
