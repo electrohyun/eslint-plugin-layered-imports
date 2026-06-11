@@ -16,8 +16,8 @@ interface LayeredImportsPlugin {
 
 const plugin: LayeredImportsPlugin = {
   meta: {
-    name: "@electrohyun/eslint-plugin-layered-imports",
-    version: "0.0.0",
+    name: "eslint-plugin-layered-imports",
+    version: "0.1.0",
   },
   rules: {
     "import-spacing": importSpacingRule,

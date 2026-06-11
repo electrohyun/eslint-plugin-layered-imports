@@ -1,6 +1,14 @@
-# eslint-plugin-layered-imports
+<p align="center">
+  <img src="./assets/logo.png" alt="eslint-plugin-layered-imports logo" width="180" />
+</p>
 
-ESLint plugin for organizing imports into readable groups, useful for FSD and other layered frontend architectures.
+<h1 align="center" style="border-bottom: none;">
+    <code>eslint-plugin-layered-imports</code>
+</h1>
+
+<p align="center">
+  ESLint plugin for organizing imports into readable groups, useful for FSD and other layered frontend architectures.
+</p>
 
 ## Why?
 
@@ -32,25 +40,26 @@ Use the FSD-friendly preset to enable the plugin with sensible defaults for laye
 The preset treats `@/` imports as internal imports, orders top-level groups as `builtin`, `external`, `internal`, `relative`, and orders internal imports by the common FSD layer order: `app`, `pages`, `widgets`, `features`, `entities`, `shared`.
 
 ```js
-import layeredImports from "@electrohyun/eslint-plugin-layered-imports";
+import layeredImports from "eslint-plugin-layered-imports";
 
-export default [
-  layeredImports.configs.fsd,
-];
+export default [layeredImports.configs.fsd];
 ```
 
 You can override the preset by adding another config object after it.
 
 ```js
-import layeredImports from "@electrohyun/eslint-plugin-layered-imports";
+import layeredImports from "eslint-plugin-layered-imports";
 
 export default [
   layeredImports.configs.fsd,
   {
     rules: {
-      "layered-imports/import-spacing": ["error", {
-        internalAliases: ["@/", "~/"],
-      }],
+      "layered-imports/import-spacing": [
+        "error",
+        {
+          internalAliases: ["@/", "~/"],
+        },
+      ],
     },
   },
 ];
@@ -59,7 +68,7 @@ export default [
 ### Manual setup
 
 ```js
-import layeredImports from "@electrohyun/eslint-plugin-layered-imports";
+import layeredImports from "eslint-plugin-layered-imports";
 
 export default [
   {
@@ -103,9 +112,12 @@ export default [
       "layered-imports": layeredImports,
     },
     rules: {
-      "layered-imports/import-spacing": ["error", {
-        internalAliases: ["@/", "~/", "@app/"],
-      }],
+      "layered-imports/import-spacing": [
+        "error",
+        {
+          internalAliases: ["@/", "~/", "@app/"],
+        },
+      ],
     },
   },
 ];
@@ -128,9 +140,12 @@ export default [
       "layered-imports": layeredImports,
     },
     rules: {
-      "layered-imports/import-spacing": ["error", {
-        groups: ["builtin", "external", "internal", "relative"],
-      }],
+      "layered-imports/import-spacing": [
+        "error",
+        {
+          groups: ["builtin", "external", "internal", "relative"],
+        },
+      ],
     },
   },
 ];
@@ -153,17 +168,20 @@ export default [
       "layered-imports": layeredImports,
     },
     rules: {
-      "layered-imports/import-spacing": ["error", {
-        internalAliases: ["@/"],
-        internalLayerOrder: [
-          "app",
-          "pages",
-          "widgets",
-          "features",
-          "entities",
-          "shared",
-        ],
-      }],
+      "layered-imports/import-spacing": [
+        "error",
+        {
+          internalAliases: ["@/"],
+          internalLayerOrder: [
+            "app",
+            "pages",
+            "widgets",
+            "features",
+            "entities",
+            "shared",
+          ],
+        },
+      ],
     },
   },
 ];
