@@ -25,6 +25,37 @@ import { helper } from "../lib/helper";
 
 ## Usage
 
+### FSD preset
+
+Use the FSD-friendly preset to enable the plugin with sensible defaults for layered frontend projects.
+
+```js
+import layeredImports from "@electrohyun/eslint-plugin-layered-imports";
+
+export default [
+  layeredImports.configs.fsd,
+];
+```
+
+You can override the preset by adding another config object after it.
+
+```js
+import layeredImports from "@electrohyun/eslint-plugin-layered-imports";
+
+export default [
+  layeredImports.configs.fsd,
+  {
+    rules: {
+      "layered-imports/import-spacing": ["error", {
+        internalAliases: ["@/", "~/"],
+      }],
+    },
+  },
+];
+```
+
+### Manual setup
+
 ```js
 import layeredImports from "@electrohyun/eslint-plugin-layered-imports";
 
@@ -110,4 +141,4 @@ Imports are reported when a later group appears before an earlier configured gro
 - [x] Add `import-spacing` rule
 - [x] Support configurable import group order
 - [x] Add auto-fix support
-- [ ] Add FSD-friendly preset
+- [x] Add FSD-friendly preset
