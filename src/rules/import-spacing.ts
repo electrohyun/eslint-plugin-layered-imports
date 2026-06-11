@@ -73,6 +73,7 @@ const rule: Rule.RuleModule = {
   },
 
   create(context) {
+    const sourceCode = context.sourceCode;
     const options = context.options[0];
     const internalAliases =
       options?.internalAliases ?? DEFAULT_INTERNAL_ALIASES;
@@ -80,11 +81,18 @@ const rule: Rule.RuleModule = {
 
     return {
       Program(node) {
+        const sourceText = sourceCode.getText();
         const imports = node.body.filter(
           (statement) => statement.type === "ImportDeclaration",
         );
 
-        const importEntries = imports.flatMap((importNode) => {
+        type ImportEntry = {
+          node: (typeof imports)[number];
+          source: string;
+          group: ImportGroup;
+        };
+
+        const importEntries: ImportEntry[] = imports.flatMap((importNode) => {
           const source = importNode.source.value;
 
           if (typeof source !== "string") {
@@ -100,6 +108,80 @@ const rule: Rule.RuleModule = {
           ];
         });
 
+        function getImportTextStart(entry: ImportEntry): number {
+          const commentsBefore = sourceCode.getCommentsBefore(entry.node);
+          let start = entry.node.range![0];
+          let expectedEndLine = entry.node.loc!.start.line - 1;
+
+          for (let index = commentsBefore.length - 1; index >= 0; index -= 1) {
+            const comment = commentsBefore[index];
+
+            if (!comment.loc || !entry.node.loc) {
+              break;
+            }
+
+            if (comment.loc.end.line !== expectedEndLine) {
+              break;
+            }
+
+            start = comment.range![0];
+            expectedEndLine = comment.loc.start.line - 1;
+          }
+
+          return start;
+        }
+
+        function getImportText(entry: ImportEntry): string {
+          return sourceText.slice(
+            getImportTextStart(entry),
+            entry.node.range![1],
+          );
+        }
+
+        function buildImportBlockText(entries: ImportEntry[]): string {
+          return entries.reduce((text, entry, index) => {
+            const importText = getImportText(entry);
+
+            if (index === 0) {
+              return importText;
+            }
+
+            const previousEntry = entries[index - 1];
+            const separator =
+              previousEntry.group === entry.group ? "\n" : "\n\n";
+
+            return `${text}${separator}${importText}`;
+          }, "");
+        }
+
+        const entryByNode = new Map(
+          importEntries.map((entry) => [entry.node, entry]),
+        );
+        const importBlocks: (typeof importEntries)[] = [];
+        let currentBlock: typeof importEntries = [];
+
+        for (const statement of node.body) {
+          if (statement.type === "ImportDeclaration") {
+            const entry = entryByNode.get(statement);
+
+            if (entry) {
+              currentBlock.push(entry);
+            }
+
+            continue;
+          }
+
+          if (currentBlock.length > 0) {
+            importBlocks.push(currentBlock);
+            currentBlock = [];
+          }
+        }
+
+        // Flush the final block when the file ends with imports.
+        if (currentBlock.length > 0) {
+          importBlocks.push(currentBlock);
+        }
+
         // Keep the furthest group we've seen so imports cannot move back to an earlier group.
         let highestSeenGroupIndex = groups.indexOf(importEntries[0]?.group);
 
@@ -110,10 +192,46 @@ const rule: Rule.RuleModule = {
           const currentGroupIndex = groups.indexOf(currentImport.group);
 
           if (currentGroupIndex < highestSeenGroupIndex) {
-            context.report({
-              node: currentImport.node,
-              messageId: "unexpectedGroupOrder",
-            });
+            const currentImportBlock = importBlocks.find((block) =>
+              block.includes(currentImport),
+            );
+            const previousImportBlock = importBlocks.find((block) =>
+              block.includes(previousImport),
+            );
+
+            if (
+              !currentImportBlock ||
+              currentImportBlock !== previousImportBlock ||
+              currentImportBlock.some(
+                (entry) => entry.node.specifiers.length === 0,
+              )
+            ) {
+              context.report({
+                node: currentImport.node,
+                messageId: "unexpectedGroupOrder",
+              });
+            } else {
+              context.report({
+                node: currentImport.node,
+                messageId: "unexpectedGroupOrder",
+                fix(fixer) {
+                  const sortedImports = [...currentImportBlock].sort(
+                    (a, b) => groups.indexOf(a.group) - groups.indexOf(b.group),
+                  );
+
+                  const fixedText = buildImportBlockText(sortedImports);
+
+                  return fixer.replaceTextRange(
+                    [
+                      getImportTextStart(currentImportBlock[0]),
+                      currentImportBlock[currentImportBlock.length - 1].node
+                        .range![1],
+                    ],
+                    fixedText,
+                  );
+                },
+              });
+            }
           }
 
           highestSeenGroupIndex = Math.max(

@@ -117,6 +117,12 @@ const invalidRelativeToExternalOrder = [
   'import React from "react";',
 ].join("\n");
 
+const validExternalToRelativeOrder = [
+  'import React from "react";',
+  "",
+  'import helper from "./helper";',
+].join("\n");
+
 const validCustomRelativeToExternalOrder = [
   'import helper from "./helper";',
   "",
@@ -127,6 +133,72 @@ const invalidCustomExternalToInternalOrder = [
   'import React from "react";',
   "",
   'import { Button } from "@/shared/ui";',
+].join("\n");
+
+const validCustomInternalToExternalOrder = [
+  'import { Button } from "@/shared/ui";',
+  "",
+  'import React from "react";',
+].join("\n");
+
+const invalidOrderWithSideEffectImport = [
+  'import helper from "./helper";',
+  "",
+  'import "./setup";',
+  "",
+  'import React from "react";',
+].join("\n");
+
+const invalidOrderAcrossNonImportStatement = [
+  'import helper from "./helper";',
+  "",
+  "const value = 1;",
+  "",
+  'import React from "react";',
+].join("\n");
+
+const invalidOrderWithLeadingComment = [
+  'import helper from "./helper";',
+  "",
+  "// React import",
+  'import React from "react";',
+].join("\n");
+
+const validOrderWithLeadingComment = [
+  "// React import",
+  'import React from "react";',
+  "",
+  'import helper from "./helper";',
+].join("\n");
+
+const invalidOrderWithConsecutiveLeadingComments = [
+  'import helper from "./helper";',
+  "",
+  "// React import",
+  "// keep this with React",
+  'import React from "react";',
+].join("\n");
+
+const validOrderWithConsecutiveLeadingComments = [
+  "// React import",
+  "// keep this with React",
+  'import React from "react";',
+  "",
+  'import helper from "./helper";',
+].join("\n");
+
+const invalidOrderKeepsSameGroupOrder = [
+  'import helperB from "./b";',
+  'import helperA from "./a";',
+  "",
+  'import React from "react";',
+].join("\n");
+
+const validOrderKeepsSameGroupOrder = [
+  'import React from "react";',
+  "",
+  'import helperB from "./b";',
+  'import helperA from "./a";',
 ].join("\n");
 
 ruleTester.run("import-spacing", rule, {
@@ -186,6 +258,7 @@ ruleTester.run("import-spacing", rule, {
     },
     {
       code: invalidRelativeToExternalOrder,
+      output: validExternalToRelativeOrder,
       errors: [{ messageId: "unexpectedGroupOrder" }],
     },
     {
@@ -195,6 +268,30 @@ ruleTester.run("import-spacing", rule, {
           groups: ["internal", "external", "builtin", "relative"],
         },
       ],
+      output: validCustomInternalToExternalOrder,
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
+    {
+      code: invalidOrderWithSideEffectImport,
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
+    {
+      code: invalidOrderAcrossNonImportStatement,
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
+    {
+      code: invalidOrderWithLeadingComment,
+      output: validOrderWithLeadingComment,
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
+    {
+      code: invalidOrderWithConsecutiveLeadingComments,
+      output: validOrderWithConsecutiveLeadingComments,
+      errors: [{ messageId: "unexpectedGroupOrder" }],
+    },
+    {
+      code: invalidOrderKeepsSameGroupOrder,
+      output: validOrderKeepsSameGroupOrder,
       errors: [{ messageId: "unexpectedGroupOrder" }],
     },
   ],
