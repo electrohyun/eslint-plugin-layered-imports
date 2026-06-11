@@ -3,14 +3,19 @@ import type { Rule } from "eslint";
 
 type ImportGroup = "builtin" | "external" | "internal" | "relative";
 
-function getImportGroup(source: string): ImportGroup {
+const DEFAULT_INTERNAL_ALIASES = ["@/"];
+
+function getImportGroup(
+  source: string,
+  internalAliases: string[],
+): ImportGroup {
   const normalizedSource = source.replace(/^node:/, "");
 
   if (builtinModules.includes(normalizedSource)) {
     return "builtin";
   }
 
-  if (source.startsWith("@/")) {
+  if (internalAliases.some((alias) => source.startsWith(alias))) {
     return "internal";
   }
 
@@ -29,7 +34,20 @@ const rule: Rule.RuleModule = {
       recommended: false,
     },
     fixable: "whitespace",
-    schema: [],
+    schema: [
+      {
+        type: "object",
+        properties: {
+          internalAliases: {
+            type: "array",
+            items: {
+              type: "string",
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
     messages: {
       missingBlankLine:
         "Expected a blank line between different import groups.",
@@ -37,6 +55,10 @@ const rule: Rule.RuleModule = {
   },
 
   create(context) {
+    const options = context.options[0];
+    const internalAliases =
+      options?.internalAliases ?? DEFAULT_INTERNAL_ALIASES;
+
     return {
       Program(node) {
         const imports = node.body.filter(
@@ -54,7 +76,7 @@ const rule: Rule.RuleModule = {
             {
               node: importNode,
               source,
-              group: getImportGroup(source),
+              group: getImportGroup(source, internalAliases),
             },
           ];
         });
@@ -80,11 +102,8 @@ const rule: Rule.RuleModule = {
                 node: currentImport.node,
                 messageId: "missingBlankLine",
                 fix(fixer) {
-                  return fixer.insertTextBefore(
-                    currentImport.node,
-                    "\n"
-                  );
-                }
+                  return fixer.insertTextBefore(currentImport.node, "\n");
+                },
               });
             }
           }

@@ -53,9 +53,36 @@ The initial groups are:
 - `internal`: project-local alias imports such as `@/shared/ui`
 - `relative`: relative imports such as `./helper` or `../lib/helper`
 
+#### Options
+
+##### `internalAliases`
+
+Type: `string[]`
+
+Default: `["@/"]`
+
+Configures which import source prefixes should be treated as the `internal` group.
+
+```js
+export default [
+  {
+    plugins: {
+      "layered-imports": layeredImports,
+    },
+    rules: {
+      "layered-imports/import-spacing": ["error", {
+        internalAliases: ["@/", "~/", "@app/"],
+      }],
+    },
+  },
+];
+```
+
+Configured aliases are matched as prefixes. Use specific prefixes such as `@/` or `@app/` instead of a broad `@` prefix so scoped packages such as `@tanstack/react-query` remain external.
+
 ## Roadmap
 
 - [x] Add `import-spacing` rule
 - [ ] Support configurable layer order
-- [ ] Add auto-fix support
+- [x] Add auto-fix support
 - [ ] Add FSD-friendly preset
