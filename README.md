@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.png" alt="eslint-plugin-layered-imports logo" width="180" />
+  <img src="https://raw.githubusercontent.com/electrohyun/eslint-plugin-layered-imports/main/assets/logo.png" alt="eslint-plugin-layered-imports logo" width="180" />
 </p>
 
 <h1 align="center" style="border-bottom: none;">
@@ -8,6 +8,13 @@
 
 <p align="center">
   ESLint plugin for organizing imports into readable groups, useful for FSD and other layered frontend architectures.
+</p>
+
+<p align="center">
+  🌐 English |
+  <a href="./README.ko.md">🇰🇷 한국어</a> |
+  <a href="./README.ja.md">🇯🇵 日本語</a> |
+  <a href="./README.zh-CN.md">🇨🇳 简体中文</a>
 </p>
 
 ## Why?
@@ -122,11 +129,14 @@ export default [
       "layered-imports": layeredImports,
     },
     rules: {
-      "layered-imports/import-spacing": ["error", {
-        internalAliases: ["@/", "~/"],
-        groups: ["builtin", "external", "internal", "relative"],
-        internalLayerOrder: ["features", "entities", "shared"],
-      }],
+      "layered-imports/import-spacing": [
+        "error",
+        {
+          internalAliases: ["@/", "~/"],
+          groups: ["builtin", "external", "internal", "relative"],
+          internalLayerOrder: ["features", "entities", "shared"],
+        },
+      ],
     },
   },
 ];
@@ -182,11 +192,11 @@ import { Button } from "@/shared/ui/button";
 
 #### Options
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `internalAliases` | `string[]` | `["@/"]` | Source prefixes treated as internal imports. |
-| `groups` | `Array<"builtin" \| "external" \| "internal" \| "relative">` | `["builtin", "external", "internal", "relative"]` | Top-level import group order. |
-| `internalLayerOrder` | `string[]` | `undefined` | Optional order inside the `internal` group. |
+| Option               | Type                                                         | Default                                           | Description                                  |
+| -------------------- | ------------------------------------------------------------ | ------------------------------------------------- | -------------------------------------------- |
+| `internalAliases`    | `string[]`                                                   | `["@/"]`                                          | Source prefixes treated as internal imports. |
+| `groups`             | `Array<"builtin" \| "external" \| "internal" \| "relative">` | `["builtin", "external", "internal", "relative"]` | Top-level import group order.                |
+| `internalLayerOrder` | `string[]`                                                   | `undefined`                                       | Optional order inside the `internal` group.  |
 
 ##### `internalAliases`
 
@@ -314,11 +324,3 @@ Autofix is intentionally conservative:
 - It does not sort named specifiers inside a single import declaration.
 - `internalLayerOrder` reads the first path segment after a matching internal alias. For example, `@/shared/ui/button` is treated as the `shared` layer.
 - Unknown internal layers are placed after known layers and keep their existing relative order.
-
-## Roadmap
-
-- [x] Add `import-spacing` rule
-- [x] Support configurable import group order
-- [x] Add auto-fix support
-- [x] Add FSD-friendly preset
-- [x] Support optional internal layer ordering
